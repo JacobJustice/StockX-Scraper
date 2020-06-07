@@ -88,7 +88,8 @@ def get_shoe_data(url, driver):
 
     # TODO: save image of the shoe
     # TODO: save name of the shoe
-    # TODO:
+    # TODO: save style code
+    # TODO: save StockX Ticker code
 
     # close tab
     driver.close()
@@ -208,6 +209,11 @@ def get_all_data_on_page(driver):
         pprint(shoe_dict, indent=9)
         # add to page's dictionary
         page_dicts.append(shoe_dict)
+
+        #
+        # COMMENT/REMOVE THIS BREAK TO ALLOW THE SCRAPER TO ACCESS EVERY LISTING
+        #
+        # 
         break
 
     return page_dicts
