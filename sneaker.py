@@ -253,10 +253,10 @@ def get_category_data(shoe_category,driver):
         if (page_num != 1):
             driver.close()
         driver.switch_to.window(driver.window_handles[-1])
-        #time.sleep(1)
+        time.sleep(1)
         print("Opening ", page_url)
         driver.get(page_url)
-        #time.sleep(2)
+        time.sleep(4)
 
         page_dicts = get_all_data_on_page(driver, category_directory)
         save_dict_to_file(category_directory, page_num, page_dicts)
