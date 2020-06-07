@@ -13,9 +13,12 @@ from pprint import pprint
 
 import csv
 
+import requests
+
 """
  Project originally made for Data Collection and Visualization class
  this is a refactored version of the webscraper, hoping to make it more readable and easily edited
+ as well as expanding on it's original features
 
  This web-scraper goes to www.stockx.com and gathers information about sneaker
  resell prices (across various brands)
@@ -26,6 +29,13 @@ import csv
  Within these subcategories there are links to individual shoe colorways, 
  information about resell price history, retail price, release date and more 
  is within this page. The program pulls this data from this page
+
+ This scraper does NOT scrape information related to size differences and 
+ instead relies on the average sale price as an estimate of the shoes perceived value
+ however, it may be important to recognize that size does affect the price of a shoe.
+ It is generally understood in the community that small sizes and very very large sizes are more rare
+ and thus more valuable. There may be anomalies within the dataset where certain sizes are extremely rare
+ and sales of those sizes on the site pull the average sale upwards, or other similar size-related anomalies.
 """
 
 
@@ -34,9 +44,32 @@ Gathers desired information about the sneaker at the given url.
 
 @param url: url to a sneaker's stockX listing
 @param driver: reference to selenium webdriver object
+@param directory: path to directory the raw image will be stored in
 @return: dictionary of information
+    The returned dictionary has these features:
+        url: url of the shoe on stockx
+        image_path: string path to raw image provided by stockx of the shoe
+        name: name of the shoe on stockx
+        ticker: A shorthand of the shoes name, used by stockx for their ticker reel feature
+
+        *release_date: MM/DD/YYYY formatted date of the sneakers original release date
+        *retail_price: MSRP of the sneaker on it's release date and as sold by retail stores (not on stockx)
+        *style_code: Style code of the sneaker provided by stockx
+        *colorway: list of colors used in the shoe seperated by '/'
+        *number_of_sales: number of sales in the stockx database
+        *price_premium: should roughly be  (average_sale_price - retail_value)/(retail_price) as a percentage
+        *average_sale_price: average sale price of all sales in the database
+
+          * if not available on the site, default to N/A
+
+    If this were to be expanded, there is more intricate information that can be extracted.
+    For example the same sneaker can be categorized in many different sections 
+    on the site such as nike, basketball and lifestyle. Perhaps nike basketball 
+    shoes have a tendency to sell better if they use the color red, whereas adidas 
+    basketball shoes sell better if they use blue.
+
 """
-def get_shoe_data(url, driver):
+def get_shoe_data(url, driver, directory):
     output = {}
 
     # open link to shoe
@@ -49,15 +82,44 @@ def get_shoe_data(url, driver):
     # store url in dictionary
     output.update({'url' : url})
 
-    # get release date
     try:
-        release_date = {'release_date'  : driver.find_element_by_xpath(
-            "//span[@data-testid='product-detail-release date']").text}
+        # save name of sneaker
+        name = {'name' : driver.find_element_by_xpath("//div[@class='col-md-12']/h1").text}
+        output.update(name)
+
+        # save ticker code
+        ticker = {'ticker' : driver.find_element_by_css_selector('.soft-black').text}
+        output.update(ticker)
+
+        # save image of the shoe and store the path to it
+        # make path just to directory that will contain the image to see if it needs to be made
+        image_path = directory[:6] + "/images" + directory[6:]
+        if (not os.path.isdir(image_path)):
+            # create the desired directory
+            os.makedirs(image_path, exist_ok=True)
+        # add the filename
+        image_path = image_path + ticker['ticker'] + ".jpg"
+
+        output.update({'image_path' : image_path[6:]}) # save path
+
+        r = requests.get(
+            	driver.find_element_by_xpath("//img[@data-testid='product-detail-image']").get_attribute('src'))
+        with open(image_path, 'wb') as f:
+            f.write(r.content) # save image to image_path
+    except:
+        return {}
+
+    # save release date
+    try:
+        release_date = {
+            'release_date'  : driver.find_element_by_xpath(
+                                  "//span[@data-testid='product-detail-release date']").text
+            }
     except:
         release_date = {'release_date'	: 'N/A'}
     output.update(release_date)
 
-    # get retail price
+    # save retail price
     try: 
         retail_price = {'retail_price' : driver.find_element_by_css_selector(
     	"div.detail:nth-child(3) > span:nth-child(2)").text}
@@ -68,28 +130,46 @@ def get_shoe_data(url, driver):
     gauges = driver.find_elements_by_xpath("//div[@class='gauges']/div[@class='gauge-container']")
 
     driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
+    # old code; not sure why I did it this way but it still works so I'm gonna leave it
     for gauge in gauges:
         gauge_text = gauge.find_element_by_css_selector("div:nth-child(2)").text
         if gauge_text == "# of Sales":
             # get # of sales
-            number_of_sales = {'number_of_sales' : gauge.find_element_by_css_selector("div:nth-child(3)").text}
-            output.update(number_of_sales)
+            number_of_sales = gauge.find_element_by_css_selector("div:nth-child(3)").text
+            if number_of_sales != "--":
+                output.update({'number_of_sales' : number_of_sales})
+            else:
+                output.update({'number_of_sales' : "N/A"})
 
         elif "Price Premium" in gauge_text:
             # get price premium
-            price_premium = {'price_premium' : gauge.find_element_by_css_selector("div:nth-child(3)").text}
-            output.update(price_premium)
+            price_premium = gauge.find_element_by_css_selector("div:nth-child(3)").text
+            if price_premium != "--":
+                output.update({'price_premium' : price_premium})
+            else:
+                output.update({'price_premium' : "N/A"})
 
         elif gauge_text == "Average Sale Price":
             # get average sale price
-            average_sale_price = {'average_sale_price' : gauge.find_element_by_css_selector("div:nth-child(3)").text}
-            output.update(average_sale_price)
+            average_sale_price = gauge.find_element_by_css_selector("div:nth-child(3)").text
+            if average_sale_price != "--":
+                output.update({'average_sale_price' : average_sale_price})
+            else:
+                output.update({'average_sale_price' : "N/A"})
 
+    # save style code
+    try:
+        style_code = {'style_code' : driver.find_element_by_xpath("//span[@data-testid='product-detail-style']").text}
+    except:
+        style_code = {'style_code' : 'N/A'}
+    output.update(style_code)
 
-    # TODO: save image of the shoe
-    # TODO: save name of the shoe
-    # TODO: save style code
-    # TODO: save StockX Ticker code
+    # save colorway of the shoe
+    try:
+        colorway = {'colorway' : driver.find_element_by_xpath("//span[@data-testid='product-detail-colorway']").text}
+    except:
+        colorway = {'colorway' : 'N/A'}
+    output.update(colorway)
 
     # close tab
     driver.close()
@@ -171,13 +251,11 @@ def get_category_data(shoe_category,driver):
         driver.get(page_url)
         time.sleep(2)
 
-        page_dicts = get_all_data_on_page(driver)
+        page_dicts = get_all_data_on_page(driver, category_directory)
         save_dict_to_file(category_directory, page_num, page_dicts)
-
 
         # check if the right arrow refers to stockx home page because for some 
         # reason that's what the right arrow does if there isn't a next page
-
         right_arrows = driver.find_elements_by_xpath(
         	"//ul[contains(@class,'ButtonList')]/a[contains(@class,'NavButton')]")
 
@@ -186,15 +264,17 @@ def get_category_data(shoe_category,driver):
             break
 
         page_num += 1
-        #print(right_arrows)
 
 
 """
 helper function that gets all shoe data on the current open page and returns it in a list of dictionaries
 
 @param driver: reference to selenium webdriver object
+@param directory: passed to get_shoe_data for organized image storage
+@param page_num: passed to get_shoe_data for organized image storage
+@return: list of the gathered data from all shoes on a page
 """
-def get_all_data_on_page(driver):
+def get_all_data_on_page(driver, directory):
     page_dicts = []
     # grab all links to shoes on the page
     list_of_shoes = driver.find_elements_by_xpath(
@@ -202,7 +282,7 @@ def get_all_data_on_page(driver):
             )
     for i, shoe in enumerate(list_of_shoes):
         shoe_link = shoe.get_attribute('href')
-        shoe_dict = get_shoe_data(shoe_link, driver)
+        shoe_dict = get_shoe_data(shoe_link, driver, directory)
         # switch back to shoe listings page
         driver.switch_to.window(driver.window_handles[1])
 
@@ -213,12 +293,9 @@ def get_all_data_on_page(driver):
         #
         # COMMENT/REMOVE THIS BREAK TO ALLOW THE SCRAPER TO ACCESS EVERY LISTING
         #
-        # 
         break
 
     return page_dicts
-
-
 
 """
 Main function
@@ -299,8 +376,5 @@ if __name__ == '__main__':
     out = main()
 
 
-driver = webdriver.Firefox()
-
-#pprint(get_shoe_data("https://stockx.com/adidas-yeezy-750-cleat", driver))
-
-
+#driver = webdriver.Firefox()
+#pprint(get_shoe_data("https://stockx.com/adidas-ultraboost-19-linen-ash-green", driver, "./"))
