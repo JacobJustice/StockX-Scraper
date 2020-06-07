@@ -107,6 +107,10 @@ def get_shoe_data(url, driver, directory):
         with open(image_path, 'wb') as f:
             f.write(r.content) # save image to image_path
     except:
+        # close tab
+        driver.close()
+        # switch back to shoe listings page
+        driver.switch_to.window(driver.window_handles[-1])
         return {}
 
     # save release date
@@ -173,6 +177,8 @@ def get_shoe_data(url, driver, directory):
 
     # close tab
     driver.close()
+    # switch back to shoe listings page
+    driver.switch_to.window(driver.window_handles[-1])
 
     return output
 
@@ -224,18 +230,19 @@ helper function that gets all of the data within one category and writes them
 to files in the data directory
 
 @param shoe_category: shoe category web element
+@param driver: reference to selenium webdriver object
 @return: dictionary of all data within that category
 """
 def get_category_data(shoe_category,driver):
     link_to_shoe_category = shoe_category.get_attribute('href')
-
+    #link_to_shoe_category = "https://stockx.com/adidas/yeezy?page=5"
     category_directory = "./data/sneakers/" + link_to_shoe_category[19:] + "/"
     # if the desired directory doesn't exist
     if (not os.path.isdir("./data/sneakers/" + link_to_shoe_category[19:])):
         # create the desired directory
         os.makedirs(category_directory, exist_ok=True)
 
-    #TODO: go to next page if there is another page
+    # go to next page if there is another page
     page_num = 1
     page_url = link_to_shoe_category
 
@@ -246,10 +253,10 @@ def get_category_data(shoe_category,driver):
         if (page_num != 1):
             driver.close()
         driver.switch_to.window(driver.window_handles[-1])
-        time.sleep(1)
+        #time.sleep(1)
         print("Opening ", page_url)
         driver.get(page_url)
-        time.sleep(2)
+        #time.sleep(2)
 
         page_dicts = get_all_data_on_page(driver, category_directory)
         save_dict_to_file(category_directory, page_num, page_dicts)
@@ -258,6 +265,7 @@ def get_category_data(shoe_category,driver):
         # reason that's what the right arrow does if there isn't a next page
         right_arrows = driver.find_elements_by_xpath(
         	"//ul[contains(@class,'ButtonList')]/a[contains(@class,'NavButton')]")
+        print(right_arrows)
 
         page_url = right_arrows[1].get_attribute('href')
         if (page_url == 'https://stockx.com/'):
@@ -280,11 +288,12 @@ def get_all_data_on_page(driver, directory):
     list_of_shoes = driver.find_elements_by_xpath(
             "//div[@class='browse-grid']/div[@class='tile browse-tile']/*/a"
             )
+    print("This page has ", len(list_of_shoes), " shoe listings")
+    #pprint(list_of_shoes)
+
     for i, shoe in enumerate(list_of_shoes):
         shoe_link = shoe.get_attribute('href')
         shoe_dict = get_shoe_data(shoe_link, driver, directory)
-        # switch back to shoe listings page
-        driver.switch_to.window(driver.window_handles[1])
 
         pprint(shoe_dict, indent=12)
         # add to page's dictionary
@@ -376,5 +385,10 @@ if __name__ == '__main__':
     out = main()
 
 
-#driver = webdriver.Firefox()
-#pprint(get_shoe_data("https://stockx.com/adidas-ultraboost-19-linen-ash-green", driver, "./"))
+driver = webdriver.Firefox()
+driver.get("https://stockx.com")
+brands = get_brands(driver)
+#driver.execute_script("window.open('');")
+#driver.switch_to.window(driver.window_handles[-1])
+#driver.get("https://stockx.com/adidas/yeezy?page=6")
+pprint(get_category_data(brands[0], driver))
