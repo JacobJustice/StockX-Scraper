@@ -286,14 +286,14 @@ def get_all_data_on_page(driver, directory):
         # switch back to shoe listings page
         driver.switch_to.window(driver.window_handles[1])
 
-        pprint(shoe_dict, indent=9)
+        pprint(shoe_dict, indent=12)
         # add to page's dictionary
         page_dicts.append(shoe_dict)
 
         #
         # COMMENT/REMOVE THIS BREAK TO ALLOW THE SCRAPER TO ACCESS EVERY LISTING
         #
-        break
+        #break
 
     return page_dicts
 
