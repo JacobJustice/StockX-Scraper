@@ -1,0 +1,7 @@
+Got blocked from site again:
+took 2hr 36min 58sec
+   (2*60*60) + (36*60) + 58 = 9418 seconds total
+
+collected ~873 data points
+
+9418/873 = ~10.79 seconds per shoe

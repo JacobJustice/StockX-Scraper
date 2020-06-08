@@ -75,9 +75,10 @@ def get_shoe_data(url, driver, directory):
     # open link to shoe
     driver.execute_script("window.open('');")
     driver.switch_to.window(driver.window_handles[-1])
-    time.sleep(1)
+    time.sleep(.5)
     print("\tOpening ", url)
     driver.get(url)
+    time.sleep(5)
 
     # store url in dictionary
     output.update({'url' : url})
@@ -124,9 +125,12 @@ def get_shoe_data(url, driver, directory):
     output.update(release_date)
 
     # save retail price
-    try: 
-        retail_price = {'retail_price' : driver.find_element_by_css_selector(
-    	"div.detail:nth-child(3) > span:nth-child(2)").text}
+    try:
+        retail_price = {
+            'retail_price'  : driver.find_element_by_xpath(
+                                  "//span[@data-testid='product-detail-retail price']").text
+            }
+
     except:
         retail_price = {'retail_price' : 'N/A'}
     output.update(retail_price)
@@ -183,47 +187,36 @@ def get_shoe_data(url, driver, directory):
     return output
 
 """
-Traverses a list of categories and finds every shoe in that category
-saving the dictionary of data scraped from that shoe's page
+helper function that gets all shoe data on the current open page and returns it in a list of dictionaries
 
-Ex:
-    <traverse_model_category_list>
-    Brand:Jordan
-        <get_category_data>
-        Category:1
-            <get_all_data_on_page>
-            Page:3
-                <get_shoe_data>
-                shoe1
-                <get_shoe_data>
-                shoe2
-                ...
-                <get_shoe_data>
-                shoen
-
-@param category_list: list of all shoe categories
 @param driver: reference to selenium webdriver object
+@param directory: passed to get_shoe_data for organized image storage
+@param page_num: passed to get_shoe_data for organized image storage
+@return: list of the gathered data from all shoes on a page
 """
-def traverse_model_category_list(category_list, driver):
-    for shoe_category in category_list:
-        get_category_data(shoe_category, driver)
+def get_all_data_on_page(driver, directory):
+    page_dicts = []
+    # grab all links to shoes on the page
+    list_of_shoes = driver.find_elements_by_xpath(
+            "//div[@class='browse-grid']/div[@class='tile browse-tile']/*/a"
+            )
+    print("This page has ", len(list_of_shoes), " shoe listings")
+    #pprint(list_of_shoes)
 
-        #close category page
-        driver.close()
-        driver.switch_to.window(driver.window_handles[0])
+    for i, shoe in enumerate(list_of_shoes):
+        shoe_link = shoe.get_attribute('href')
+        shoe_dict = get_shoe_data(shoe_link, driver, directory)
 
-"""
-helper function to save lists of dictionaries to the correct file
+        pprint(shoe_dict, indent=12)
+        # add to page's dictionary
+        page_dicts.append(shoe_dict)
 
-@param directory: directory to be saved in
-@param page_num: number of the page it was pulled from
-@param page_dicts: list of data-containing dictionaries
-"""
-def save_dict_to_file(directory, page_num, page_dicts):
-    with open(directory + "page" + str(page_num) + ".csv", 'w') as f:
-        w = csv.DictWriter(f, page_dicts[0].keys())
-        w.writeheader()
-        w.writerows(page_dicts)
+        #
+        # COMMENT/REMOVE THIS BREAK TO ALLOW THE SCRAPER TO ACCESS EVERY LISTING
+        #
+        #break
+
+    return page_dicts
 
 """
 helper function that gets all of the data within one category and writes them 
@@ -275,36 +268,49 @@ def get_category_data(shoe_category,driver):
 
 
 """
-helper function that gets all shoe data on the current open page and returns it in a list of dictionaries
+Traverses a list of categories and finds every shoe in that category
+saving the dictionary of data scraped from that shoe's page
 
+Ex:
+    <traverse_model_category_list>
+    Brand:Jordan
+        <get_category_data>
+        Category:1
+            <get_all_data_on_page>
+            Page:3
+                <get_shoe_data>
+                shoe1
+                <get_shoe_data>
+                shoe2
+                ...
+                <get_shoe_data>
+                shoen
+
+@param category_list: list of all shoe categories
 @param driver: reference to selenium webdriver object
-@param directory: passed to get_shoe_data for organized image storage
-@param page_num: passed to get_shoe_data for organized image storage
-@return: list of the gathered data from all shoes on a page
 """
-def get_all_data_on_page(driver, directory):
-    page_dicts = []
-    # grab all links to shoes on the page
-    list_of_shoes = driver.find_elements_by_xpath(
-            "//div[@class='browse-grid']/div[@class='tile browse-tile']/*/a"
-            )
-    print("This page has ", len(list_of_shoes), " shoe listings")
-    #pprint(list_of_shoes)
+def traverse_model_category_list(category_list, driver):
+    for shoe_category in category_list:
+        get_category_data(shoe_category, driver)
 
-    for i, shoe in enumerate(list_of_shoes):
-        shoe_link = shoe.get_attribute('href')
-        shoe_dict = get_shoe_data(shoe_link, driver, directory)
+        #close category page
+        driver.close()
+        driver.switch_to.window(driver.window_handles[0])
 
-        pprint(shoe_dict, indent=12)
-        # add to page's dictionary
-        page_dicts.append(shoe_dict)
 
-        #
-        # COMMENT/REMOVE THIS BREAK TO ALLOW THE SCRAPER TO ACCESS EVERY LISTING
-        #
-        #break
+"""
+helper function to save lists of dictionaries to the correct file
 
-    return page_dicts
+@param directory: directory to be saved in
+@param page_num: number of the page it was pulled from
+@param page_dicts: list of data-containing dictionaries
+"""
+def save_dict_to_file(directory, page_num, page_dicts):
+    with open(directory + "page" + str(page_num) + ".csv", 'w') as f:
+        w = csv.DictWriter(f, page_dicts[0].keys())
+        w.writeheader()
+        w.writerows(page_dicts)
+
 
 """
 Main function
@@ -334,6 +340,7 @@ def main():
         traverse_model_category_list(model_list, driver)
 
         print("All Done!")
+
 
 """
 Obtains a list of all brand web elements using the "browse" dropdown at the top of the site
@@ -385,10 +392,10 @@ if __name__ == '__main__':
     out = main()
 
 
-driver = webdriver.Firefox()
-driver.get("https://stockx.com")
-brands = get_brands(driver)
-#driver.execute_script("window.open('');")
-#driver.switch_to.window(driver.window_handles[-1])
-#driver.get("https://stockx.com/adidas/yeezy?page=6")
-pprint(get_category_data(brands[0], driver))
+#driver = webdriver.Firefox()
+#driver.get("https://stockx.com")
+#brands = get_brands(driver)
+##driver.execute_script("window.open('');")
+##driver.switch_to.window(driver.window_handles[-1])
+##driver.get("https://stockx.com/adidas/yeezy?page=6")
+#pprint(get_category_data(brands[0], driver))
