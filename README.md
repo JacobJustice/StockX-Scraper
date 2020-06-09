@@ -15,7 +15,7 @@ While originally only for sneakers, they have expanded to streetwear, collectibl
 
 # How to use
 
-If you were to hypothetically run this simply run sneaker.py and sit back for a long period of time. But you probably shouldn't.
+If you were to hypothetically run this simply run `python sneaker.py` and sit back for a long period of time. But you probably shouldn't.
 
 # Does StockX allow use of this?
 
