@@ -2,6 +2,7 @@ import os
 
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -60,7 +61,7 @@ Gathers desired information about the sneaker at the given url.
         *price_premium: should roughly be  (average_sale_price - retail_value)/(retail_price) as a percentage
         *average_sale_price: average sale price of all sales in the database
 
-          * if not available on the site, default to N/A
+          * if not available on the page, default to N/A
 
     If this were to be expanded, there is more intricate information that can be extracted.
     For example the same sneaker can be categorized in many different sections 
@@ -73,12 +74,12 @@ def get_shoe_data(url, driver, directory):
     output = {}
 
     # open link to shoe
-    driver.execute_script("window.open('');")
+    driver.execute_script("window.open();")
     driver.switch_to.window(driver.window_handles[-1])
     time.sleep(.5)
     print("\tOpening ", url)
     driver.get(url)
-    time.sleep(5)
+    time.sleep(45) # just gonna keep increasing until the stop kicking me off
 
     # store url in dictionary
     output.update({'url' : url})
@@ -242,7 +243,7 @@ def get_category_data(shoe_category,driver):
     # get all data on the page, if there is a next page get the info on that page too
     while True:
         # open link to category in new tab
-        driver.execute_script("window.open('');")
+        driver.execute_script("window.open();")
         if (page_num != 1):
             driver.close()
         driver.switch_to.window(driver.window_handles[-1])
@@ -313,36 +314,6 @@ def save_dict_to_file(directory, page_num, page_dicts):
 
 
 """
-Main function
-Calls get_brands to obtain elements
-
-"""
-def main():
-    driver = webdriver.Firefox()
-
-    url = 'https://stockx.com/'
-    driver.get(url)
-
-    print("waiting 2 seconds")
-    time.sleep(2)
-    print("done waiting\n\n")
-
-    for brand_element in get_brands(driver):
-        # hover over brand menu element
-        brand_element.click() # don't know why but you have to click to open this dropdown
-        print("hovering on ",brand_element)
-        time.sleep(1)
-
-        #generate list of models/categories
-        model_list = driver.find_element_by_css_selector('div.categoryColumn:nth-child(3)')
-        model_list = model_list.find_elements_by_xpath('./a')
-        
-        traverse_model_category_list(model_list, driver)
-
-        print("All Done!")
-
-
-"""
 Obtains a list of all brand web elements using the "browse" dropdown at the top of the site
 
 @param: reference to selenium webdriver object
@@ -387,6 +358,39 @@ def get_brands(driver):
 
     return brand_list_dropdown
 
+
+"""
+Main function
+Calls get_brands to obtain elements
+
+"""
+def main():
+    #profile = webdriver.FirefoxProfile()
+    #profile.set_preference("general.useragent.override"
+    #    , "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0")
+    #profile.set_preference("javascript.enabled", True)
+    driver = webdriver.Firefox()
+
+    url = 'https://stockx.com/'
+    driver.get(url)
+
+    print("waiting 2 seconds")
+    time.sleep(2)
+    print("done waiting\n\n")
+
+    for brand_element in get_brands(driver):
+        # hover over brand menu element
+        brand_element.click() # don't know why but you have to click to open this dropdown
+        print("hovering on ",brand_element)
+        time.sleep(1)
+
+        #generate list of models/categories
+        model_list = driver.find_element_by_css_selector('div.categoryColumn:nth-child(3)')
+        model_list = model_list.find_elements_by_xpath('./a')
+        
+        traverse_model_category_list(model_list, driver)
+
+        print("All Done!")
 out = None
 if __name__ == '__main__':
     out = main()

@@ -1,6 +1,11 @@
 # Project specific
-# planning to share dataset on a seperate platform or repository
+    #may share data on other platforms
 data/
+
+    #test page
+test.html
+
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

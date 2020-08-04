@@ -5,3 +5,5 @@ took 2hr 36min 58sec
 collected ~873 data points
 
 9418/873 = ~10.79 seconds per shoe
+
+ended on page 18 of ultraboosts
