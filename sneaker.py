@@ -6,6 +6,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import NoSuchElementException
 
 import time
 import numpy as np
@@ -37,8 +38,14 @@ import requests
  It is generally understood in the community that small sizes and very very large sizes are more rare
  and thus more valuable. There may be anomalies within the dataset where certain sizes are extremely rare
  and sales of those sizes on the site pull the average sale upwards, or other similar size-related anomalies.
+
+ It is possible that my decently fast internet speed allows me to load pages
+ faster then you are able to. Try putting some time.sleeps in where things 
+ break during page loads.
 """
 
+PAGE_WAIT = 30
+ROBOT_PAGE_WAIT = 1800
 
 """
 Gathers desired information about the sneaker at the given url.
@@ -74,12 +81,7 @@ def get_shoe_data(url, driver, directory):
     output = {}
 
     # open link to shoe
-    driver.execute_script("window.open();")
-    driver.switch_to.window(driver.window_handles[-1])
-    time.sleep(.5)
-    print("\tOpening ", url)
-    driver.get(url)
-    time.sleep(45) # just gonna keep increasing until the stop kicking me off
+    open_link(driver,url)
 
     # store url in dictionary
     output.update({'url' : url})
@@ -199,10 +201,10 @@ def get_all_data_on_page(driver, directory):
     page_dicts = []
     # grab all links to shoes on the page
     list_of_shoes = driver.find_elements_by_xpath(
-            "//div[@class='browse-grid']/div[@class='tile browse-tile']/*/a"
+            "//div[@class='browse-grid']/div[@class='tile browse-tile updated']/*/a"
             )
     print("This page has ", len(list_of_shoes), " shoe listings")
-    #pprint(list_of_shoes)
+#    pprint(list_of_shoes)
 
     for i, shoe in enumerate(list_of_shoes):
         shoe_link = shoe.get_attribute('href')
@@ -243,14 +245,7 @@ def get_category_data(shoe_category,driver):
     # get all data on the page, if there is a next page get the info on that page too
     while True:
         # open link to category in new tab
-        driver.execute_script("window.open();")
-        if (page_num != 1):
-            driver.close()
-        driver.switch_to.window(driver.window_handles[-1])
-        time.sleep(1)
-        print("Opening ", page_url)
-        driver.get(page_url)
-        time.sleep(4)
+        open_link(driver,page_url)
 
         page_dicts = get_all_data_on_page(driver, category_directory)
         save_dict_to_file(category_directory, page_num, page_dicts)
@@ -259,11 +254,15 @@ def get_category_data(shoe_category,driver):
         # reason that's what the right arrow does if there isn't a next page
         right_arrows = driver.find_elements_by_xpath(
         	"//ul[contains(@class,'ButtonList')]/a[contains(@class,'NavButton')]")
-        print(right_arrows)
+        #print(right_arrows)
 
         page_url = right_arrows[1].get_attribute('href')
         if (page_url == 'https://stockx.com/'):
             break
+
+        # before going to next page, close the current page
+        driver.close()
+        driver.switch_to.window(driver.window_handles[-1])
 
         page_num += 1
 
@@ -358,6 +357,57 @@ def get_brands(driver):
 
     return brand_list_dropdown
 
+"""
+open_link
+
+Opens a link in a new tab
+Before returning, check to see if that page is the "are you a robot?" page
+If it is, wait 30 minutes and try again, repeat until you get a different page
+
+@param driver: reference to selenium webdriver object
+@param url: url of the new tab that you're trying to open
+"""
+def open_link(driver, url):
+    while True:
+        # open new tab
+        driver.execute_script("window.open();")
+        driver.switch_to.window(driver.window_handles[-1])
+        time.sleep(.5)
+
+        # open link
+        print("Opening ", url)
+        driver.get(url)
+        # check page for robot deterrent
+        if not check_for_robot(driver):
+            # return if it's not the robot page
+            time.sleep(PAGE_WAIT) # wait for a little bit so as to not make too many requests
+            return
+        else:
+            print("Detected robot page, waiting ", ROBOT_PAGE_WAIT, "seconds...")
+            time.sleep(ROBOT_PAGE_WAIT)
+            # close tab
+            driver.close()
+            # switch back to previous page
+            driver.switch_to.window(driver.window_handles[-1])
+
+"""
+check_for_robot
+
+returns True if the current open page is the "are you a robot?" page
+else return false
+
+@param driver: reference to selenium webdriver object
+"""
+def check_for_robot(driver):
+    try:
+        print(driver.find_element_by_xpath('//h1').text.lower().strip())
+        if driver.find_element_by_xpath('//h1').text.lower().strip() == "Please verify you are a human".lower().strip():
+            return True
+        else:
+            return False
+    except NoSuchElementException as e:
+        return False
+
 
 """
 Main function
@@ -378,7 +428,9 @@ def main():
     time.sleep(2)
     print("done waiting\n\n")
 
-    for brand_element in get_brands(driver):
+    brands = get_brands(driver)
+    del brands[0]
+    for brand_element in brands:
         # hover over brand menu element
         brand_element.click() # don't know why but you have to click to open this dropdown
         print("hovering on ",brand_element)
