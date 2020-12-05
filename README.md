@@ -19,6 +19,8 @@ If you were to hypothetically run this simply run `python sneaker.py` and sit ba
 
 # Does StockX allow use of this?
 
+**StockX has since updated their robots.txt to disallow pretty much everything (https://stockx.com/robots.txt) but I'll leave this here because I spent a long time writing it a long time ago**
+
 Almost definitely **NO**, but it is not THAT simple. 
 
 Their robots.txt does allow for bots to access any portion of the site with no explicit delay. However, I have seen issues with the selenium driver getting blocked from the site for 10-20 minutes after running the scraper for an hour and I assume it is because of the following lines in their terms of service (https://stockx.com/terms):
@@ -34,3 +36,4 @@ Of course the first line very plainly states that use of this scraper or any oth
 On the contrary, the line "bypass our robot exclusion headers, robots.txt rules..." makes me think that they must allow scrapers to access non-disallowed portions of the site because that implies that they care about what the robots.txt disallows and therefore also does not disallow. They also don't specify a crawl-delay, which makes me think that perhaps they don't want people using any scraper otherwise they would make it easier for people. 
 
 To me it seems that the robots.txt is poorly implemented, but there for entities that do have express permission to access their site, unfortunately that is a little misleading to the layman and they should update their robots.txt to name these specific agents to make it more clear who is allowed to access which parts of their site with a scraper.
+
