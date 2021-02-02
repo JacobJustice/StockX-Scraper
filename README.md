@@ -19,8 +19,6 @@ If you were to hypothetically run this simply run `python sneaker.py` and sit ba
 
 # Does StockX allow use of this?
 
-**StockX has since updated their robots.txt to disallow pretty much everything (https://stockx.com/robots.txt) but I'll leave this here because I spent a long time writing it a long time ago**
-
 Almost definitely **NO**, but it is not THAT simple. 
 
 Their robots.txt does allow for bots to access any portion of the site with no explicit delay. However, I have seen issues with the selenium driver getting blocked from the site for 10-20 minutes after running the scraper for an hour and I assume it is because of the following lines in their terms of service (https://stockx.com/terms):
