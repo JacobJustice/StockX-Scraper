@@ -19,7 +19,9 @@ import requests
 
 """
  Project originally made for Data Collection and Visualization class
- this is a refactored version of the webscraper, hoping to make it more readable and easily edited
+ now being adapted for my Undergraduate Capstone project.
+
+ This is a refactored version of the webscraper, hoping to make it more readable and easily edited
  as well as expanding on it's original features
 
  This web-scraper goes to www.stockx.com and gathers information about sneaker
@@ -44,7 +46,7 @@ import requests
  break during page loads.
 """
 
-PAGE_WAIT = 30
+PAGE_WAIT = 3
 ROBOT_PAGE_WAIT = 1800
 
 """
@@ -201,7 +203,7 @@ def get_all_data_on_page(driver, directory):
     page_dicts = []
     # grab all links to shoes on the page
     list_of_shoes = driver.find_elements_by_xpath(
-            "//div[@class='browse-grid']/div[@class='tile browse-tile updated']/*/a"
+            "//div[@class='browse-grid']/div[contains(@class,'tile browse-tile')]/*/a"
             )
     print("This page has ", len(list_of_shoes), " shoe listings")
 #    pprint(list_of_shoes)
@@ -321,18 +323,14 @@ def get_brands(driver):
     action = ActionChains(driver)
 
     wait = WebDriverWait(driver, 10)
-    # hover over browse menu
-    browse_dropdown = wait.until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR, 'li.dropdown:nth-child(1)'))
-                )
+    # hover over  browse menu
+    browse_dropdown = driver.find_element_by_xpath("//li[@class='dropdown browse-dropdown']") 
     action.move_to_element(browse_dropdown).perform()
     print("browser_dropdown")
 #    time.sleep(1)
 
     # hover over sneakers menu
-    sneaker_dropdown = wait.until(
-                    EC.element_to_be_clickable((By.CSS_SELECTOR,'a.category:nth-child(1)'))
-               )
+    sneaker_dropdown = driver.find_element_by_xpath("//a[contains(@data-testid,'submenu-sneakers')]")
     action.move_to_element(sneaker_dropdown).perform()
     print("sneaker_dropdown")
 #    time.sleep(1)
@@ -345,14 +343,14 @@ def get_brands(driver):
 # puts them all on the same level with the same class name. This means that we can't use xpath to simply 
 # grab all clickable subelements underneath the element we have selected (there will be none)
 #
-# the element div.categoryColumn:nth-child(2) doesn't exist until 
+# the element ul[contains(@class, 'category-level-2')] doesn't exist until 
 # sneaker_dropdown is hovered over once it is hovered the element is there and we can use xpath to make a 
 # list of all clickable elements in that category
 
-    brand_list_dropdown = driver.find_element_by_css_selector('div.categoryColumn:nth-child(2)')
-    brand_list_dropdown = brand_list_dropdown.find_elements_by_xpath('./a')
+    brand_list_dropdown = driver.find_element_by_xpath("//ul[contains(@class, 'category-level-2')]")
+    brand_list_dropdown = brand_list_dropdown.find_elements_by_xpath('./li/a')
 
-    # get rid of extra glitchy link
+    # delete upcoming releases page
     del brand_list_dropdown[-1]
 
     return brand_list_dropdown
@@ -424,11 +422,13 @@ def main():
     url = 'https://stockx.com/'
     driver.get(url)
 
-    print("waiting 2 seconds")
-    time.sleep(2)
+#    print("waiting 2 seconds")
+#    time.sleep(2)
     print("done waiting\n\n")
 
     brands = get_brands(driver)
+
+    # delete adidas (don't do if you want to scrape adidas) I'm just focusing on Jordans
     del brands[0]
     for brand_element in brands:
         # hover over brand menu element
@@ -437,8 +437,8 @@ def main():
         time.sleep(1)
 
         #generate list of models/categories
-        model_list = driver.find_element_by_css_selector('div.categoryColumn:nth-child(3)')
-        model_list = model_list.find_elements_by_xpath('./a')
+        model_list = driver.find_element_by_xpath("//ul[contains(@class, 'category-level-2')]")
+        model_list = model_list.find_elements_by_xpath('./li/a')
         
         traverse_model_category_list(model_list, driver)
 
