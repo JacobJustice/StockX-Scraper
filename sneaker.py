@@ -44,8 +44,19 @@ import requests
 
 BREAKS = False # if true, gets data for one sneaker per model
 
-PAGE_WAIT = 30
-ROBOT_PAGE_WAIT = 1800
+# after opening a link, wait this long
+PAGE_WAIT = 50
+
+# number of links before long wait
+THRESHOLD = 50
+
+# after opening THRESHOLD number of links wait this long
+THRESHOLD_WAIT = 7200
+
+# after encountering the "Are you a robot?" page wait this long
+ROBOT_PAGE_WAIT = 3600
+
+num_opened = 0
 
 """
 Gathers desired information about the sneaker at the given url.
@@ -377,6 +388,14 @@ If it is, wait 30 minutes and try again, repeat until you get a different page
 @param url: url of the new tab that you're trying to open
 """
 def open_link(driver, url):
+
+    # set local num_opened to reference of global num_opened
+    global num_opened
+    num_opened += 1
+    if num_opened % THRESHOLD == 0:
+        print("MEET OPENED LINK THRESHOLD. Sleeping for ", THRESHOLD_WAIT,  "seconds...")
+        time.sleep(THRESHOLD_WAIT)
+
     while True:
         # open new tab
         driver.execute_script("window.open();")
@@ -385,6 +404,7 @@ def open_link(driver, url):
 
         # open link
         print("Opening ", url)
+        print("num_opened", num_opened, "\t num_opened%THRESHOLD",num_opened%THRESHOLD)
         driver.get(url)
         # check page for robot deterrent
         if not check_for_robot(driver):
