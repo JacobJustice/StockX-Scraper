@@ -1,9 +1,10 @@
 # Project specific
-    #may share data on other platforms
 data/
 
     #test page
 test.html
+	#test directory
+test/
 
 	#todo list
 TODO.md
