@@ -40,13 +40,11 @@ import requests
  It is generally understood in the community that small sizes and very very large sizes are more rare
  and thus more valuable. There may be anomalies within the dataset where certain sizes are extremely rare
  and sales of those sizes on the site pull the average sale upwards, or other similar size-related anomalies.
-
- It is possible that my decently fast internet speed allows me to load pages
- faster then you are able to. Try putting some time.sleeps in where things 
- break during page loads.
 """
 
-PAGE_WAIT = 3
+BREAKS = False # if true, gets data for one sneaker per model
+
+PAGE_WAIT = 30
 ROBOT_PAGE_WAIT = 1800
 
 """
@@ -216,10 +214,9 @@ def get_all_data_on_page(driver, directory):
         # add to page's dictionary
         page_dicts.append(shoe_dict)
 
-        #
-        # COMMENT/REMOVE THIS BREAK TO ALLOW THE SCRAPER TO ACCESS EVERY LISTING
-        #
-        #break
+        if BREAKS:
+            break
+
 
     return page_dicts
 
@@ -255,11 +252,11 @@ def get_category_data(shoe_category,driver):
         # check if the right arrow refers to stockx home page because for some 
         # reason that's what the right arrow does if there isn't a next page
         right_arrows = driver.find_elements_by_xpath(
-        	"//ul[contains(@class,'ButtonList')]/a[contains(@class,'NavButton')]")
+        	"//ul[contains(@class,'ButtonList')]/a[contains(@class,'NavigationButton')]")
         #print(right_arrows)
 
         page_url = right_arrows[1].get_attribute('href')
-        if (page_url == 'https://stockx.com/'):
+        if (page_url == 'https://stockx.com/') or BREAKS:
             break
 
         # before going to next page, close the current page
@@ -269,6 +266,7 @@ def get_category_data(shoe_category,driver):
         page_num += 1
 
 
+
 """
 Traverses a list of categories and finds every shoe in that category
 saving the dictionary of data scraped from that shoe's page
@@ -276,6 +274,7 @@ saving the dictionary of data scraped from that shoe's page
 Ex:
     <traverse_model_category_list>
     Brand:Jordan
+    (pointer to category information)
         <get_category_data>
         Category:1
             <get_all_data_on_page>
@@ -291,13 +290,19 @@ Ex:
 @param category_list: list of all shoe categories
 @param driver: reference to selenium webdriver object
 """
-def traverse_model_category_list(category_list, driver):
-    for shoe_category in category_list:
-        get_category_data(shoe_category, driver)
+def traverse_model_category_list(brand_category_list, driver):
+    for brand_category in brand_category_list:
+        shoe_models = brand_category.find_elements_by_xpath("./li/a")
 
-        #close category page
-        driver.close()
-        driver.switch_to.window(driver.window_handles[0])
+        for model in shoe_models:
+            get_category_data(model, driver)
+
+            #close category page
+            driver.close()
+            driver.switch_to.window(driver.window_handles[0])
+
+#            if BREAKS:
+#                break
 
 
 """
@@ -320,22 +325,8 @@ Obtains a list of all brand web elements using the "browse" dropdown at the top 
 @param: reference to selenium webdriver object
 """
 def get_brands(driver):
-    action = ActionChains(driver)
 
-    wait = WebDriverWait(driver, 10)
-    # hover over  browse menu
-    browse_dropdown = driver.find_element_by_xpath("//li[@class='dropdown browse-dropdown']") 
-    action.move_to_element(browse_dropdown).perform()
-    print("browser_dropdown")
-#    time.sleep(1)
-
-    # hover over sneakers menu
-    sneaker_dropdown = driver.find_element_by_xpath("//a[contains(@data-testid,'submenu-sneakers')]")
-    action.move_to_element(sneaker_dropdown).perform()
-    print("sneaker_dropdown")
-#    time.sleep(1)
-
-    # make list of all brand elements
+    browse_sneakers_dropdown(driver)
 
 # I want to make a list of all clickable elements underneath the sneakers node in the dropdown menu
 # 
@@ -354,6 +345,26 @@ def get_brands(driver):
     del brand_list_dropdown[-1]
 
     return brand_list_dropdown
+
+"""
+browse_sneakers_dropdown
+
+Hovers over Browse->Sneakers
+"""
+def browse_sneakers_dropdown(driver):
+    action = ActionChains(driver)
+
+    wait = WebDriverWait(driver, 10)
+    # hover over  browse menu
+    browse_dropdown = driver.find_element_by_xpath("//li[@class='dropdown browse-dropdown']") 
+    action.move_to_element(browse_dropdown).perform()
+    print("browser_dropdown")
+#    time.sleep(1)
+
+    # hover over sneakers menu
+    sneaker_dropdown = driver.find_element_by_xpath("//a[contains(@data-testid,'submenu-sneakers')]")
+    action.move_to_element(sneaker_dropdown).perform()
+    print("sneaker_dropdown")
 
 """
 open_link
@@ -381,8 +392,10 @@ def open_link(driver, url):
             time.sleep(PAGE_WAIT) # wait for a little bit so as to not make too many requests
             return
         else:
-            print("Detected robot page, waiting ", ROBOT_PAGE_WAIT, "seconds...")
-            time.sleep(ROBOT_PAGE_WAIT)
+            #print("Detected robot page, waiting ", ROBOT_PAGE_WAIT, "seconds...")
+            #time.sleep(ROBOT_PAGE_WAIT)
+
+            input("hit enter to restart")
             # close tab
             driver.close()
             # switch back to previous page
@@ -410,7 +423,6 @@ def check_for_robot(driver):
 """
 Main function
 Calls get_brands to obtain elements
-
 """
 def main():
     #profile = webdriver.FirefoxProfile()
@@ -418,35 +430,39 @@ def main():
     #    , "Mozilla/5.0 (X11; Linux x86_64; rv:38.0) Gecko/20100101 Firefox/38.0")
     #profile.set_preference("javascript.enabled", True)
     driver = webdriver.Firefox()
+    action = ActionChains(driver)
 
     url = 'https://stockx.com/'
     driver.get(url)
 
-#    print("waiting 2 seconds")
-#    time.sleep(2)
     print("done waiting\n\n")
 
     brands = get_brands(driver)
 
     # delete adidas (don't do if you want to scrape adidas) I'm just focusing on Jordans
     del brands[0]
+
     for brand_element in brands:
+        browse_sneakers_dropdown(driver)
+        print(brand_element.text)
         # hover over brand menu element
-        brand_element.click() # don't know why but you have to click to open this dropdown
-        print("hovering on ",brand_element)
+        action.move_to_element(brand_element).perform()
+        print("hovering on ",brand_element.text)
         time.sleep(1)
 
         #generate list of models/categories
-        model_list = driver.find_element_by_xpath("//ul[contains(@class, 'category-level-2')]")
-        model_list = model_list.find_elements_by_xpath('./li/a')
-        
-        traverse_model_category_list(model_list, driver)
+        brand_categories = driver.find_elements_by_xpath("//ul[contains(@class, 'category-level-3')]")
+
+        # cleans out fake/empty links that wouldn't be accessible to normal users
+        brand_categories = [x for x in brand_categories if x.text.strip() != '']
+
+        traverse_model_category_list(brand_categories, driver)
 
         print("All Done!")
+
 out = None
 if __name__ == '__main__':
     out = main()
-
 
 #driver = webdriver.Firefox()
 #driver.get("https://stockx.com")
