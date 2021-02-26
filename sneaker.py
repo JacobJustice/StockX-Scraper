@@ -41,17 +41,19 @@ import requests
  and thus more valuable. There may be anomalies within the dataset where certain sizes are extremely rare
  and sales of those sizes on the site pull the average sale upwards, or other similar size-related anomalies.
 """
+skip_page = "https://stockx.com/nike/sb?page=1"
+first_category = True # skips to start on a specified page if set to true
 
 BREAKS = False # if true, gets data for one sneaker per model
 
 # after opening a link, wait this long
-PAGE_WAIT = 50
+PAGE_WAIT = 30
 
 # number of links before long wait
 THRESHOLD = 50
 
 # after opening THRESHOLD number of links wait this long
-THRESHOLD_WAIT = 7200
+THRESHOLD_WAIT = 3600
 
 # after encountering the "Are you a robot?" page wait this long
 ROBOT_PAGE_WAIT = 3600
@@ -240,11 +242,21 @@ to files in the data directory
 @return: dictionary of all data within that category
 """
 def get_category_data(shoe_category,driver):
+    global first_category
     link_to_shoe_category = shoe_category.get_attribute('href')
+
+    if first_category:
+        print("First pass detected skipping to", skip_page)
+        link_to_shoe_category = skip_page
+        first_category = False
+
     #link_to_shoe_category = "https://stockx.com/adidas/yeezy?page=5"
-    category_directory = "./data/sneakers/" + link_to_shoe_category[19:] + "/"
+
+    category_directory = link_to_shoe_category[19:(link_to_shoe_category.find('?'))]
+
+    category_directory = "./data/sneakers/" + category_directory + "/"
     # if the desired directory doesn't exist
-    if (not os.path.isdir("./data/sneakers/" + link_to_shoe_category[19:])):
+    if (not os.path.isdir("./data/sneakers/" + category_directory)):
         # create the desired directory
         os.makedirs(category_directory, exist_ok=True)
 
@@ -268,7 +280,8 @@ def get_category_data(shoe_category,driver):
 
         page_url = right_arrows[1].get_attribute('href')
         if (page_url == 'https://stockx.com/') or BREAKS:
-            break
+            pass
+            #break
 
         # before going to next page, close the current page
         driver.close()
