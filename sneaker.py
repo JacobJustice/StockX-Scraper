@@ -41,13 +41,13 @@ import requests
  and thus more valuable. There may be anomalies within the dataset where certain sizes are extremely rare
  and sales of those sizes on the site pull the average sale upwards, or other similar size-related anomalies.
 """
-skip_page = "https://stockx.com/nike/sb?page=1"
+skip_page = "https://stockx.com/retro-jordans/air-jordan-1/"
 first_category = True # skips to start on a specified page if set to true
 
-BREAKS = False # if true, gets data for one sneaker per model
+BREAKS = True # if true, gets data for one sneaker per page
 
 # after opening a link, wait this long
-PAGE_WAIT = 30
+PAGE_WAIT = 3
 
 # number of links before long wait
 THRESHOLD = 50
@@ -207,7 +207,6 @@ helper function that gets all shoe data on the current open page and returns it 
 
 @param driver: reference to selenium webdriver object
 @param directory: passed to get_shoe_data for organized image storage
-@param page_num: passed to get_shoe_data for organized image storage
 @return: list of the gathered data from all shoes on a page
 """
 def get_all_data_on_page(driver, directory):
@@ -261,7 +260,13 @@ def get_category_data(shoe_category,driver):
         os.makedirs(category_directory, exist_ok=True)
 
     # go to next page if there is another page
-    page_num = 1
+
+    loc = link_to_shoe_category.find('?page=')
+    if loc != -1:
+        page_num = int(link_to_shoe_category[loc+6:])
+    else:
+        page_num = 1
+
     page_url = link_to_shoe_category
 
     # get all data on the page, if there is a next page get the info on that page too
