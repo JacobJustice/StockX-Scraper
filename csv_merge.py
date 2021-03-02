@@ -1,6 +1,13 @@
 import os
 import glob
 import pandas as pd
+import argparse
+import sys
+
+parser = argparse.ArgumentParser(description='Merge all csvs in a directory into one')
+parser.add_argument('-d', '--directory', required=True, help='Directory containing .csv you wish to merge')
+parser.add_argument('-o', '--output', default='output',help='Name of output file with no file ending')
+args = parser.parse_args(sys.argv[1:])
 
 """
 merge_csvs in directory
@@ -22,8 +29,10 @@ def merge_csv(directory_path, output_name="combined_csv.csv"):
             , mode='w')
 
 def main():
-    merge_csv("./data/sneakers/retro-jordans/air-jordan-1/"
-                , output_name="airjordan1.csv")
+    global args
+    directory = args.directory
+    outname = args.output
+    merge_csv(directory, output_name= outname + ".csv")
 
 if __name__ == "__main__":
     main()
