@@ -23,7 +23,7 @@ def merge_csv(directory_path, output_name="combined_csv.csv"):
 
 def main():
     merge_csv("./data/sneakers/retro-jordans/air-jordan-1/"
-                , output_name="air_jordan_1.csv")
+                , output_name="airjordan1.csv")
 
 if __name__ == "__main__":
     main()

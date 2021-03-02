@@ -44,10 +44,10 @@ import requests
 skip_page = "https://stockx.com/retro-jordans/air-jordan-1/"
 first_category = True # skips to start on a specified page if set to true
 
-BREAKS = True # if true, gets data for one sneaker per page
+BREAKS = False # if true, gets data for one sneaker per page
 
 # after opening a link, wait this long
-PAGE_WAIT = 3
+PAGE_WAIT = 30
 
 # number of links before long wait
 THRESHOLD = 50
