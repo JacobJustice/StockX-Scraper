@@ -41,7 +41,7 @@ import requests
  and thus more valuable. There may be anomalies within the dataset where certain sizes are extremely rare
  and sales of those sizes on the site pull the average sale upwards, or other similar size-related anomalies.
 """
-skip_page = "https://stockx.com/retro-jordans/air-jordan-1/"
+skip_page = "https://stockx.com/nike/sb?page=2"
 first_category = True # skips to start on a specified page if set to true
 
 BREAKS = False # if true, gets data for one sneaker per page
