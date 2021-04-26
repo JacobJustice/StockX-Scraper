@@ -90,11 +90,11 @@ Gathers desired information about the sneaker at the given url.
     basketball shoes sell better if they use blue.
 
 """
-def get_shoe_data(url, driver, directory):
+def get_shoe_data(url, driver, directory,page_wait=PAGE_WAIT,complex_image_path=True):
     output = {}
 
     # open link to shoe
-    open_link(driver,url)
+    open_link(driver,url,page_wait=page_wait)
 
     # store url in dictionary
     output.update({'url' : url})
@@ -110,14 +110,22 @@ def get_shoe_data(url, driver, directory):
 
         # save image of the shoe and store the path to it
         # make path just to directory that will contain the image to see if it needs to be made
-        image_path = directory[:6] + "/images" + directory[6:]
+        if complex_image_path:
+            image_path = directory[:6] + "/images" + directory[6:]
+        else:
+            image_path = directory
+
         if (not os.path.isdir(image_path)):
-            # create the desired directory
+            # create the desired directory if it doesn't exist
             os.makedirs(image_path, exist_ok=True)
+
         # add the filename
         image_path = image_path + ticker['ticker'] + ".jpg"
 
-        output.update({'image_path' : image_path[6:]}) # save path
+        if complex_image_path:
+            output.update({'image_path' : image_path[6:]}) # save path
+        else:
+            output.update({'image_path' : image_path}) # save path
 
         r = requests.get(
             	driver.find_element_by_xpath("//img[@data-testid='product-detail-image']").get_attribute('src'))
@@ -152,12 +160,14 @@ def get_shoe_data(url, driver, directory):
     output.update(retail_price)
 
     gauges = driver.find_elements_by_xpath("//div[@class='gauges']/div[@class='gauge-container']")
+    print(gauges)
 
     driver.execute_script("window.scrollTo(0,document.body.scrollHeight)")
     # old code; not sure why I did it this way but it still works so I'm gonna leave it
     for gauge in gauges:
-        gauge_text = gauge.find_element_by_css_selector("div:nth-child(2)").text
-        if gauge_text == "# of Sales":
+        gauge_text = gauge.find_element_by_css_selector("div:nth-child(2)").text.lower()
+        print(gauge_text)
+        if gauge_text == "# of sales":
             # get # of sales
             number_of_sales = gauge.find_element_by_css_selector("div:nth-child(3)").text
             if number_of_sales != "--":
@@ -165,7 +175,7 @@ def get_shoe_data(url, driver, directory):
             else:
                 output.update({'number_of_sales' : "N/A"})
 
-        elif "Price Premium" in gauge_text:
+        elif "price premium" in gauge_text:
             # get price premium
             price_premium = gauge.find_element_by_css_selector("div:nth-child(3)").text
             if price_premium != "--":
@@ -173,7 +183,7 @@ def get_shoe_data(url, driver, directory):
             else:
                 output.update({'price_premium' : "N/A"})
 
-        elif gauge_text == "Average Sale Price":
+        elif gauge_text == "average sale price":
             # get average sale price
             average_sale_price = gauge.find_element_by_css_selector("div:nth-child(3)").text
             if average_sale_price != "--":
@@ -405,7 +415,7 @@ If it is, wait 30 minutes and try again, repeat until you get a different page
 @param driver: reference to selenium webdriver object
 @param url: url of the new tab that you're trying to open
 """
-def open_link(driver, url):
+def open_link(driver, url, page_wait=PAGE_WAIT):
 
     # set local num_opened to reference of global num_opened
     global num_opened
@@ -427,7 +437,7 @@ def open_link(driver, url):
         # check page for robot deterrent
         if not check_for_robot(driver):
             # return if it's not the robot page
-            time.sleep(PAGE_WAIT) # wait for a little bit so as to not make too many requests
+            time.sleep(page_wait) # wait for a little bit so as to not make too many requests
             return
         else:
             #print("Detected robot page, waiting ", ROBOT_PAGE_WAIT, "seconds...")
