@@ -17,6 +17,10 @@ While originally only for sneakers, they have expanded to streetwear, collectibl
 
 Simply run `python sneaker.py` and sit back for a long period of time.
 
+Here is what it should look like:
+
+https://www.youtube.com/watch?v=eEy5Hl3TJ04
+
 # Does StockX allow use of this?
 
 Almost definitely **NO**, but it is not THAT simple. 
