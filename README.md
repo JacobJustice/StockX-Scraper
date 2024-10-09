@@ -2,7 +2,7 @@
 
 Scrapes StockX for data on sneakers. I cannot reccomend use of this web scraper however as StockX probably doesn't allow for it (see Does StockX allow use of this? below).
 
-The website is subject to change and this readme was written as of June 9th
+The website is subject to change and this readme was written as of June 9th, 2020
 
 # What is StockX?
 
